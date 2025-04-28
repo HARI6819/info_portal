@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Excel Data</title>
+    {% load static %}
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 0;
+        }
+        .search-container {
+            margin: 20px;
+            position: relative;
+            display: inline-block;
+        }
+        #searchBox {
+            width: 200px;
+            padding: 8px 0px 8px 30px;
+        }
+        #suggestions {
+            position: absolute;
+            width: 95%;
+            margin-left: 5%;
+            background: white;
+            border: 1px solid #ccc;
+            display: none;
+            max-height: 150px;
+            overflow-y: auto;
+            text-align: left;
+            z-index: 10;
+        }
+        #suggestions div {
+            padding: 8px;
+            cursor: pointer;
+        }
+        #suggestions div:hover {
+            background-color: #f2f2f2;
+        }
+        table {
+            width: 160%; /* Ensures the table fills the container */
+            border-collapse: collapse;
+            margin-top: 50px;
+            margin-left: 5%;
+            margin-right: 5%;
+            background: white;
+            border-radius: 3px;
+        }
+        th, td {
+            border: 1px solid rgb(161, 161, 161);
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: rgb(34, 31, 107);
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        #searchResults {
+            margin-top: 20px;
+        }
+        #searchResults th, td{
+            height: 50px;
+            max-width: 172%;
+        }
+
+        .cont{
+            position: absolute;
+            bottom: 100%;
+        }
+
+        .profile{
+        height: 50vh;
+        width: 20%;
+        background-color: rgba(232, 217, 217, 0);
+        position: absolute;
+        margin-top: 10%;
+        left: 6%;
+        border-radius: 3%;
+        border: 2px solid black;
+    }
+    .profile .circle{
+        height: 30%;
+        width: 35%;
+        background-color: rgba(255, 0, 0, 0);
+        border-radius: 50%;
+        position: relative;
+        top: -17%;
+        left: 32%;
+        border: 5px solid rgb(52, 211, 52);
+    }
+    
+    .container-table{
+        
+        height: 60vh;
+        max-height: 60vh;
+        width: 65%;
+        max-width: 65%;
+        background-color: rgb(222, 222, 222);
+        position: absolute;
+        top: 27%;
+        left: 30%;
+        border-radius: 10px;
+        border: 2px solid black;
+        justify-items: left;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+        z-index: 1;
+    }
+    .name{
+        height: 8%;
+        width: 20%;
+        background-color: rgb(34, 31, 107);
+        border-radius: 12px;
+        position: absolute;
+        top: 23.5%;
+        padding-top: 10px;
+        left: 52%;
+        z-index: 1000;
+        border: 2px solid black;
+    }
+    .search-container button{
+        background-color:  rgb(34, 31, 107) ;
+        padding: 8px 20px;
+        color: white;
+        border-radius: 3px;
+        margin-left: 5px;
+    }
+    .bx-search{
+        position: relative;
+        left: 8%;
+    }
+    
+    </style>
+</head>
+<body>
+    {% include 'Main.html' %}
+    <div class="profile">
+        <img src="https://www.bitsathy.ac.in/wp-content/uploads/2022/09/staffbg-scaled.jpg" style="width: 100%; height: 20vh; border-top-left-radius: 4%; border-top-right-radius: 4%;">
+        <div class="circle">
+            <img src="" style="height: 100%; width: 100%; border-radius: 50%;">
+        </div>
+        <h3></h3>
+    </div>
+    <div class="search-container">
+        <i class='bx bx-search'></i>
+        <input type="text"  id="searchBox" placeholder="Search Faculty..." oninput="showSuggestions()" >
+        <div id="suggestions"></div>
+        <button onclick="searchData()">Search</button>
+    </div>
+    
+    <div id="tableContainer" class="cont"></div>
+    <div class="name"><center><h2 style="color: white;"></h2></center></div>
+    <div class="container-table">
+    <div id="searchResults"></div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const storedTable = localStorage.getItem('excelTable');
+            if (storedTable) {
+                document.getElementById('tableContainer').innerHTML = storedTable;
+            } else {
+                document.getElementById('tableContainer').innerHTML = "<p>No data available. Please upload a file first.</p>";
+            }
+        });
+
+        function showSuggestions() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const suggestionsBox = document.getElementById('suggestions');
+            suggestionsBox.innerHTML = '';
+
+            if (!query) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            const table = document.querySelector('#tableContainer table');
+            if (!table) return;
+
+            let matches = new Set();
+
+            for (let row of table.rows) {
+                for (let cell of row.cells) {
+                    const lines = cell.innerText.split('\n');
+                    lines.forEach(line => {
+                        if (line.toLowerCase().includes(query)) {
+                            let trimmedLine = line.replace(/\([^)]*\)/g, '').trim(); // Remove text inside parentheses
+                            matches.add(trimmedLine);
+                        }
+                    });
+                }
+            }
+
+            matches = Array.from(matches).slice(0, 5); // Limit suggestions
+
+            if (matches.length > 0) {
+                matches.forEach(match => {
+                    const div = document.createElement('div');
+                    div.innerText = match;
+                    div.onclick = () => {
+                        document.getElementById('searchBox').value = match;
+                        suggestionsBox.style.display = 'none';
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+                suggestionsBox.style.display = 'block';
+            } else {
+                suggestionsBox.style.display = 'none';
+            }
+        }
+
+        function searchData() {
+            const query = document.getElementById('searchBox').value.toLowerCase();
+            const table = document.querySelector('#tableContainer table');
+            if (!table || query === '') return;
+            
+            
+            let resultHTML = '<table><tr><th>Time</th><th>Date</th><th>Venue</th></tr>';
+            let found = false;
+            let name = query;
+            for (let row of table.rows) {
+                for (let cell of row.cells) {
+                    const lines = cell.innerText.split('\n');
+                    lines.forEach(line => {
+                        if (line.toLowerCase().includes(query)) {
+                            name = line;
+                            let header = table.rows[0].cells[cell.cellIndex]?.innerText || 'N/A';
+                            let firstColumnData = row.cells[0]?.innerText || 'N/A';
+                            resultHTML += `<tr><td>${header}</td><td>${firstColumnData}</td><td>${line.trim()}</td></tr>`;
+                            found = true;
+                        }
+                    });
+                }
+            }
+            let answer = name.replace(/\([^)]*\)/g, '').trim();
+
+
+            const imgElement = document.querySelector('.circle img');
+            imgElement.onerror = function() {
+                this.src = `/static/Image/${answer}.jpg`; // If PNG fails, load JPG
+            };
+            imgElement.src = `/static/Image/${answer}.png`;
+            document.querySelector('.name h2').innerText = answer;
+            document.querySelector('.profile h3').innerText = answer;
+            resultHTML += '</table>';
+            document.getElementById('searchResults').innerHTML = found ? resultHTML : '<p>No results found.</p>';
+        }
+    </script>
+</body>
+</html>
