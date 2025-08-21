@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Tables</title>
+    <style>
+        .containerMain {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            padding: 20px;
+            padding-left: 10%;
+        }
+        table {
+            border-collapse: collapse;
+            background: white;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        th, td {
+            border: 1px solid rgb(161, 161, 161);
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: rgb(34, 31, 107);
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .selected {
+            background-color: lightblue;
+        }
+        .infotable, .third {
+            min-width: 300px;
+        }
+        #firstTable{
+            width: 15%;
+            position: absolute;
+            top: 40%;
+        }
+        .infotable{
+            width: 60%;
+            position: absolute;
+            top: 20%;
+            left: 30%;
+        }
+        #thirdTable{
+            width: 60%;
+            position: absolute;
+            top: 70%;
+            left: 30%;
+        }
+        .he{
+            height: 100px;
+        }
+    </style>
+</head>
+<body>
+    {%include 'Main.html' %}
+    <div class="containerMain">
+        <table id="firstTable">
+            <tr>
+                <th>Venues</th>
+            </tr>
+            <tr>
+                <td data-info="SH1 | SH2 | SH3 | SF001 | SF002 | SF003 | SF101 | SF102 | SF103 ">SF</td>
+            </tr>
+            <tr>
+                <td data-info="M001 | M002 | M003 | M101 | M102 | M103 | M201 | M202 | M203">Mech</td>
+            </tr>
+            <tr>
+                <td data-info="EW001 | EW002 | EW003 | EW101 | EW102 | EW103 | EW201 | EW202 | EW203 | EW118">AS Block</td>
+            </tr>
+            <tr>
+                <td data-info="WW001 | WW002 | WW003 | WW101 | WW102 | WW103 | WW201 | WW202 | WW203">IB Block</td>
+            </tr>
+        </table>
+    
+        <table class="infotable" id="secondTable">
+            <thead>
+                <tr>
+                    <th colspan="8">Venue Availability</th>
+                </tr>
+            </thead>
+            <tbody id="infoDisplay">
+                <tr>
+                    <td>Click on a venue to see details</td>
+                </tr>
+            </tbody>
+        </table>
+    
+        <table id="thirdTable" class="third">
+            <thead>
+                <tr>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="he">Click on a venue to see details</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const firstTable = document.getElementById("firstTable");
+            const infoDisplay = document.getElementById("infoDisplay");
+            const thirdTable = document.getElementById("thirdTable").querySelector("tbody");
+    
+            // Predefined data-info mapping for venues
+            const venueDetails = {
+                "SH1": "This place is located in Sun-Flower Block | Basement ",
+                "SH2": "This place is located in Sun-Flower Block | Basement ",
+                "SH3": "This place is located in Sun-Flower Block | Second-Floor",
+                "SF001": "This place is located in Sun-Flower Block | Basement",
+                "SF002": "This place is located in Sun-Flower Block | Basement",
+                "SF003": "This place is located in Sun-Flower Block | Basement",
+                "SF101": "This place is located in Sun-Flower Block | Ground-Floor",
+                "SF102": "This place is located in Sun-Flower Block | Ground-Floor",
+                "SF103": "This place is located in Sun-Flower Block | Ground-Floor",
+                "M001": "This is the first Mech room",
+                "M002": "This is the second Mech room",
+                "M003": "This is the third Mech room",
+                "M101": "This is the Mech Lab 1",
+                "M102": "This is the Mech Lab 2",
+                "M103": "This is the Mech Workshop",
+                "EW001": "This is the AS Block Workshop",
+                "EW002": "This is the AS Block Seminar Hall",
+                "EW003": "This is the AS Block Library",
+                "WW001": "This is the IB Block Main Hall",
+                "WW002": "This is the IB Block Conference Room",
+            };
+    
+            // Handle First Table Click (Venues Group)
+            firstTable.addEventListener("click", function (event) {
+                const target = event.target;
+                if (target.tagName === "TD") {
+                    document.querySelectorAll("#firstTable td").forEach(td => {
+                        td.classList.remove("selected");
+                    });
+                    target.classList.add("selected");
+    
+                    const info = target.getAttribute("data-info");
+                    const venueCodes = info.split("|").map(item => item.trim());
+    
+                    infoDisplay.innerHTML = "";
+                    let row;
+                    venueCodes.forEach((code, index) => {
+                        if (index % 8 === 0) {
+                            row = document.createElement("tr");
+                            infoDisplay.appendChild(row);
+                        }
+                        const cell = document.createElement("td");
+                        cell.textContent = code;
+                        // Assign correct data-info from predefined mapping
+                        cell.setAttribute("data-info", venueDetails[code] || "No details available");
+                        row.appendChild(cell);
+                    });
+    
+                    while (row.children.length < 8) {
+                        const emptyCell = document.createElement("td");
+                        row.appendChild(emptyCell);
+                    }
+                }
+            });
+    
+            // Handle Second Table Click (Venue Details)
+            infoDisplay.addEventListener("click", function (event) {
+                const target = event.target;
+                if (target.tagName === "TD" && target.hasAttribute("data-info")) {
+                    thirdTable.innerHTML = `<tr><td>${target.getAttribute("data-info")}</td></tr>`;
+                }
+            });
+        });
+    </script>
+    
+</body>
+</html>

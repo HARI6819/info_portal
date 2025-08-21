@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Data Matching</title>
+</head>
+
+<style>
+    .containerMain {
+        position: relative;
+        left: 6%;
+    }
+
+    table {
+        width: 15%; /* Increased width for multi-column layout */
+        border-collapse: collapse;
+        margin-top: 14%;
+        margin-left: 5%;
+        margin-right: 5%;
+        background: white;
+        border-radius: 3px;
+        cursor: pointer;
+    }
+
+    th, td {
+        border: 1px solid rgb(161, 161, 161);
+        padding: 8px;
+        text-align: center;
+    }
+
+    th {
+        background-color: rgb(34, 31, 107);
+        color: white;
+    }
+
+    tr:nth-child(even) {
+        background-color: #f2f2f2;
+    }
+
+    .infotable {
+        position: absolute;
+        left: 25%;
+        top: -170%;
+        width: 60%;
+    }
+
+    .selected {
+        background-color: lightblue;
+    }
+
+    .highlight-green {
+        background-color: green;
+        color: white;
+        font-weight: bold;
+    }
+
+    .highlight-red {
+        background-color: red;
+        color: white;
+        font-weight: bold;
+    }
+
+    .search-container {
+        position: absolute;
+        left: 25%;
+        margin-bottom: 10px;
+    }
+
+    .search-container input {
+        padding: 5px;
+        width: 200px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+
+    .route-header {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+    .det{
+        position: absolute;
+        left: 15%;
+        top: 39%;
+    }
+    .det1{
+        position: absolute;
+        left: 15%;
+        top: 42%;
+    }
+</style>
+
+<body>
+    {% include 'Main.html' %}
+
+    <!-- From and To Headers -->
+    <h4 class="route-header" id="routeInfo">From: - | To: -</h4>
+    <p class="det"><i class='bx bxs-checkbox' style='color:#ffffff'  ></i> Available</p>
+    <p class="det1"><i class='bx bxs-checkbox' style='color:#ff0000'  ></i> Not Available</p>
+    <div class="containerMain">
+
+        <!-- First Table -->
+        <table id="firstTable">
+            <tr>
+                <th>Venues</th>
+            </tr>
+            <tr>
+                <td data-info="SH1 | SH2 | SH3 | SF001 | SF002 | SF003 | SF101 | SF102 | SF103 | SF 201 | SF 202 | SF 303">SF</td>
+            </tr>
+            <tr>
+                <td data-info="M001 | M002 | M003 | M101 | M102 | M103 | M104 | M105 | M106| M201 | M202 | M203| M204 | M205 | M206 | M301 | M302 | M303| M304 | M305 | M306 ">Mech</td>
+            </tr>
+            <tr>
+                <td data-info="EW101 | EW102 | EW103 | EW104 | EW105 | EW106 |EW107 | EW108 | EW109 | EW110 | EW111 | EW112 | EW113 | EW114 | EW115 | EW116 |EW117 | EW118 | EW201 | EW202 | EW203 | EW204 | EW205 | EW206 |EW207 | EW208 | EW209 | EW210 | EW211 | EW212 | EW213 | EW214 | EW215 | EW216 |EW217 | EW218 ">AS Block</td>
+            </tr>
+            <tr>
+                <td data-info="WW101 | WW102 | WW103 | WW104 | WW105 | WW106 |WW107 | WW108 | WW109 | WW110 | WW111 | WW112 | WW113 | WW114 | WW115 | WW116 |WW117 | WW118 | WW201 | WW202 | WW203 | WW204 | WW205 | WW206 |WW207 | WW208 | WW209 | WW210 | WW211 | WW212 | WW213 | WW214 | WW215 | WW216 |WW217 | WW218 ">IB Block</td>
+            </tr>
+        </table>
+
+        <!-- Second Table (Now in multi-column format) -->
+        <table class="infotable" id="secondTable">
+            <thead>
+                <tr>
+                    <th colspan="8">Venue Availability</th>
+                </tr>
+            </thead>
+            <tbody id="infoDisplay">
+                <tr>
+                    <td colspan="8">Click on a venue to see details</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const firstTable = document.getElementById("firstTable");
+            const infoDisplay = document.getElementById("infoDisplay");
+            const routeInfo = document.getElementById("routeInfo");
+    
+            let excelDataMatches = new Set();
+    
+            const storedTable = localStorage.getItem('excelTable');
+            if (storedTable) {
+                updateRouteInfo(storedTable);
+                processExcelTable(storedTable);
+            } else {
+                console.log("No Excel data found in localStorage.");
+            }
+    
+            function updateRouteInfo(tableHTML) {
+                let tempDiv = document.createElement("div");
+                tempDiv.innerHTML = tableHTML;
+                let rows = tempDiv.querySelectorAll("tr");
+    
+                if (rows.length > 1) {
+                    let fromData = rows[1]?.querySelector("td")?.textContent.trim() || "N/A";
+                    let toData = rows[27]?.querySelector("td")?.textContent.trim() || "N/A";
+                    routeInfo.textContent = `From: ${fromData} | To: ${toData}`;
+                }
+            }
+    
+            // Function to extract data inside parentheses from stored table
+            function extractParenthesisData(tableHTML) {
+                const regex = /\(([^)]+)\)/g;
+                let matches = [];
+                let match;
+    
+                while ((match = regex.exec(tableHTML)) !== null) {
+                    matches.push(match[1].trim()); // Store only the text inside parentheses
+                }
+                return matches;
+            }
+    
+            // Process stored Excel data and extract values inside parentheses
+            function processExcelTable(tableHTML) {
+                excelDataMatches = new Set(extractParenthesisData(tableHTML));
+                highlightMatches();
+            }
+    
+            // Highlight matches in the second table
+            function highlightMatches() {
+                document.querySelectorAll("#infoDisplay tr td").forEach(td => {
+                    let cellText = td.textContent.trim();
+                    if (excelDataMatches.has(cellText)) {
+                        td.classList.add("highlight-red");
+                    } else {
+                        td.classList.remove("highlight-red");
+                    }
+                });
+            }
+    
+            firstTable.addEventListener("click", function (event) {
+                const target = event.target;
+                if (target.tagName === "TD") {
+                    document.querySelectorAll("#firstTable td").forEach(td => {
+                        td.classList.remove("selected");
+                    });
+                    target.classList.add("selected");
+    
+                    const info = target.getAttribute("data-info");
+                    const venueCodes = info.split("|").map(item => item.trim());
+    
+                    infoDisplay.innerHTML = "";
+                    let row;
+                    venueCodes.forEach((code, index) => {
+                        if (index % 8 === 0) {
+                            row = document.createElement("tr");
+                            infoDisplay.appendChild(row);
+                        }
+                        const cell = document.createElement("td");
+                        cell.textContent = code;
+                        row.appendChild(cell);
+                    });
+    
+                    while (row.children.length < 8) {
+                        const emptyCell = document.createElement("td");
+                        row.appendChild(emptyCell);
+                    }
+    
+                    // Ensure highlighting is applied after the table is updated
+                    highlightMatches();
+                }
+            });
+        });
+    </script>
+    
+</body>
+</html>
